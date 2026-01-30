@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { authAPI } from '@/app/services/api';
 
 interface User {
   id: string;
@@ -20,82 +21,71 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // Load user from localStorage on mount
+  // Load user from token on mount
   useEffect(() => {
-    const storedUser = localStorage.getItem('xcyber_user');
-    const storedToken = localStorage.getItem('xcyber_token');
-    if (storedUser && storedToken) {
-      setUser(JSON.parse(storedUser));
-      setIsAuthenticated(true);
-    }
+    const loadUser = async () => {
+      const token = localStorage.getItem('xcyber_token');
+      if (token) {
+        try {
+          const response = await authAPI.getProfile();
+          if (response.success) {
+            setUser(response.data.user);
+            setIsAuthenticated(true);
+          }
+        } catch (error) {
+          // Token is invalid, clear it
+          localStorage.removeItem('xcyber_token');
+        }
+      }
+      setLoading(false);
+    };
+
+    loadUser();
   }, []);
 
   const register = async (username: string, email: string, password: string, role: 'ADMIN' | 'USER') => {
-    // Get existing users
-    const usersStr = localStorage.getItem('xcyber_users');
-    const users = usersStr ? JSON.parse(usersStr) : [];
-
-    // Check if email already exists
-    if (users.some((u: any) => u.email === email)) {
-      return { success: false, message: 'Email already registered' };
+    try {
+      const response = await authAPI.register({ username, email, password, role });
+      
+      if (response.success) {
+        setUser(response.data.user);
+        setIsAuthenticated(true);
+        return { success: true, message: 'Registration successful' };
+      }
+      
+      return { success: false, message: response.message };
+    } catch (error: any) {
+      return { success: false, message: error.message || 'Registration failed' };
     }
-
-    // Create new user
-    const newUser = {
-      id: `user_${Date.now()}`,
-      username,
-      email,
-      password, // In production, this would be hashed
-      role,
-      createdAt: new Date().toISOString(),
-    };
-
-    users.push(newUser);
-    localStorage.setItem('xcyber_users', JSON.stringify(users));
-
-    return { success: true, message: 'Registration successful' };
   };
 
   const login = async (email: string, password: string) => {
-    // Get existing users
-    const usersStr = localStorage.getItem('xcyber_users');
-    const users = usersStr ? JSON.parse(usersStr) : [];
-
-    // Find user
-    const foundUser = users.find((u: any) => u.email === email && u.password === password);
-
-    if (!foundUser) {
-      return { success: false, message: 'Invalid credentials' };
+    try {
+      const response = await authAPI.login({ email, password });
+      
+      if (response.success) {
+        setUser(response.data.user);
+        setIsAuthenticated(true);
+        return { success: true };
+      }
+      
+      return { success: false, message: response.message };
+    } catch (error: any) {
+      return { success: false, message: error.message || 'Login failed' };
     }
-
-    // Create user session
-    const sessionUser: User = {
-      id: foundUser.id,
-      username: foundUser.username,
-      email: foundUser.email,
-      role: foundUser.role,
-    };
-
-    // Generate mock JWT token
-    const token = `jwt_${Date.now()}_${foundUser.id}`;
-
-    // Store in localStorage
-    localStorage.setItem('xcyber_user', JSON.stringify(sessionUser));
-    localStorage.setItem('xcyber_token', token);
-
-    setUser(sessionUser);
-    setIsAuthenticated(true);
-
-    return { success: true };
   };
 
   const logout = () => {
-    localStorage.removeItem('xcyber_user');
-    localStorage.removeItem('xcyber_token');
+    authAPI.logout();
     setUser(null);
     setIsAuthenticated(false);
   };
+
+  if (loading) {
+    return null; // Or a loading spinner
+  }
 
   return (
     <AuthContext.Provider value={{ user, login, register, logout, isAuthenticated }}>
