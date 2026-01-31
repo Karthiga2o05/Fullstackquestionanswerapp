@@ -3,7 +3,7 @@ import { authAPI } from '@/app/services/api';
 
 interface User {
   id: string;
-  username: string;
+  name: string;
   email: string;
   role: 'ADMIN' | 'USER';
 }
@@ -11,9 +11,10 @@ interface User {
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<{ success: boolean; message?: string }>;
-  register: (username: string, email: string, password: string, role: 'ADMIN' | 'USER') => Promise<{ success: boolean; message?: string }>;
+  register: (name: string, email: string, password: string, role: 'ADMIN' | 'USER') => Promise<{ success: boolean; message?: string }>;
   logout: () => void;
   isAuthenticated: boolean;
+  loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -45,9 +46,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loadUser();
   }, []);
 
-  const register = async (username: string, email: string, password: string, role: 'ADMIN' | 'USER') => {
+  const register = async (name: string, email: string, password: string, role: 'ADMIN' | 'USER') => {
     try {
-      const response = await authAPI.register({ username, email, password, role });
+      const response = await authAPI.register({ name, email, password, role });
       
       if (response.success) {
         setUser(response.data.user);
@@ -84,11 +85,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   if (loading) {
-    return null; // Or a loading spinner
+    return null;
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, isAuthenticated }}>
+    <AuthContext.Provider value={{ user, login, register, logout, isAuthenticated, loading }}>
       {children}
     </AuthContext.Provider>
   );

@@ -2,6 +2,11 @@ import mongoose from 'mongoose';
 
 const questionSchema = new mongoose.Schema(
   {
+    sectionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Section',
+      required: [true, 'Section ID is required'],
+    },
     questionText: {
       type: String,
       required: [true, 'Question text is required'],
@@ -29,7 +34,7 @@ const questionSchema = new mongoose.Schema(
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      ref: 'Admin',
       required: true,
     },
   },
@@ -39,6 +44,7 @@ const questionSchema = new mongoose.Schema(
 );
 
 // Index for faster queries
+questionSchema.index({ sectionId: 1 });
 questionSchema.index({ createdBy: 1 });
 questionSchema.index({ questionType: 1 });
 

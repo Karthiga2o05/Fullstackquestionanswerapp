@@ -4,6 +4,7 @@ import cors from 'cors';
 // Import routes
 import authRoutes from './routes/auth.routes.js';
 import adminRoutes from './routes/admin.routes.js';
+import sectionRoutes from './routes/section.routes.js';
 import questionRoutes from './routes/question.routes.js';
 import answerRoutes from './routes/answer.routes.js';
 
@@ -30,6 +31,7 @@ app.get('/health', (req, res) => {
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/sections', sectionRoutes);
 app.use('/api/questions', questionRoutes);
 app.use('/api/answers', answerRoutes);
 

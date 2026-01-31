@@ -4,11 +4,11 @@ import Question from '../models/Question.js';
 /**
  * @desc    Submit an answer
  * @route   POST /api/answers
- * @access  Private
+ * @access  Private (User)
  */
 export const submitAnswer = async (req, res) => {
   try {
-    const { questionId, answerText } = req.body;
+    const { sectionId, questionId, answerText } = req.body;
 
     // Check if question exists
     const question = await Question.findById(questionId);
@@ -44,6 +44,7 @@ export const submitAnswer = async (req, res) => {
     // Create answer
     const answer = await Answer.create({
       userId: req.user._id,
+      sectionId,
       questionId,
       answerText,
       isCorrect,
@@ -64,24 +65,15 @@ export const submitAnswer = async (req, res) => {
 };
 
 /**
- * @desc    Get user's answers
- * @route   GET /api/answers/:userId
- * @access  Private
+ * @desc    Get current user's answers
+ * @route   GET /api/answers/user
+ * @access  Private (User)
  */
 export const getUserAnswers = async (req, res) => {
   try {
-    const userId = req.params.userId;
-
-    // Users can only view their own answers, admins can view anyone's
-    if (req.user.role !== 'ADMIN' && req.user._id.toString() !== userId) {
-      return res.status(403).json({
-        success: false,
-        message: 'You can only view your own answers',
-      });
-    }
-
-    const answers = await Answer.find({ userId })
+    const answers = await Answer.find({ userId: req.user._id })
       .populate('questionId', 'questionText questionType')
+      .populate('sectionId', 'sectionName')
       .sort({ createdAt: -1 });
 
     res.status(200).json({
@@ -99,14 +91,19 @@ export const getUserAnswers = async (req, res) => {
 };
 
 /**
- * @desc    Get current user's answers
- * @route   GET /api/answers
- * @access  Private
+ * @desc    Get user's answers by section
+ * @route   GET /api/answers/section/:sectionId
+ * @access  Private (User)
  */
-export const getMyAnswers = async (req, res) => {
+export const getUserAnswersBySection = async (req, res) => {
   try {
-    const answers = await Answer.find({ userId: req.user._id })
-      .populate('questionId', 'questionText questionType')
+    const { sectionId } = req.params;
+
+    const answers = await Answer.find({ 
+      userId: req.user._id,
+      sectionId 
+    })
+      .populate('questionId', 'questionText questionType correctAnswer')
       .sort({ createdAt: -1 });
 
     res.status(200).json({

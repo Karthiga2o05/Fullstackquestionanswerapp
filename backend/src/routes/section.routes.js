@@ -1,5 +1,5 @@
 import express from 'express';
-import { getQuestionsBySection } from '../controllers/question.controller.js';
+import { getAllSections, getSectionById } from '../controllers/section.controller.js';
 import { protect } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
@@ -7,6 +7,7 @@ const router = express.Router();
 // All routes are protected
 router.use(protect);
 
-router.get('/:sectionId', getQuestionsBySection);
+router.get('/', getAllSections);
+router.get('/:id', getSectionById);
 
 export default router;

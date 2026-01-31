@@ -1,17 +1,17 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router';
 import { AuthProvider } from '@/app/contexts/AuthContext';
-import { DataProvider } from '@/app/contexts/DataContext';
+import { SectionProvider } from '@/app/contexts/SectionContext';
 import Login from '@/app/components/Login';
 import Register from '@/app/components/Register';
-import AdminDashboard from '@/app/components/AdminDashboard';
-import UserDashboard from '@/app/components/UserDashboard';
+import AdminDashboard from '@/app/components/admin/AdminDashboard';
+import UserDashboard from '@/app/components/user/UserDashboard';
 import ProtectedRoute from '@/app/components/ProtectedRoute';
 
 export default function App() {
   return (
     <Router>
       <AuthProvider>
-        <DataProvider>
+        <SectionProvider>
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
@@ -33,7 +33,7 @@ export default function App() {
             />
             <Route path="/" element={<Navigate to="/login" replace />} />
           </Routes>
-        </DataProvider>
+        </SectionProvider>
       </AuthProvider>
     </Router>
   );

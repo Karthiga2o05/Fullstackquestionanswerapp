@@ -1,4 +1,5 @@
 import User from '../models/User.js';
+import Admin from '../models/Admin.js';
 import { generateToken } from '../config/jwt.js';
 
 /**
@@ -8,37 +9,52 @@ import { generateToken } from '../config/jwt.js';
  */
 export const register = async (req, res) => {
   try {
-    const { username, email, password, role } = req.body;
+    const { name, email, password, role } = req.body;
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
+    // Validate input
+    if (!name || !email || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Email already registered',
+        message: 'Please provide all required fields',
       });
     }
 
-    // Create new user
-    const user = await User.create({
-      username,
+    // Check which model to use based on role
+    const Model = role === 'ADMIN' ? Admin : User;
+    const modelName = role === 'ADMIN' ? 'Admin' : 'User';
+
+    // Check if user/admin already exists
+    const existing = await Model.findOne({ email });
+    if (existing) {
+      return res.status(400).json({
+        success: false,
+        message: `${modelName} with this email already exists`,
+      });
+    }
+
+    // Create new user/admin
+    const newUser = await Model.create({
+      name,
       email,
       password,
       role: role || 'USER',
     });
 
     // Generate JWT token
-    const token = generateToken({ id: user._id });
+    const token = generateToken({ 
+      id: newUser._id, 
+      role: newUser.role 
+    });
 
     res.status(201).json({
       success: true,
-      message: 'User registered successfully',
+      message: `${modelName} registered successfully`,
       data: {
         user: {
-          id: user._id,
-          username: user.username,
-          email: user.email,
-          role: user.role,
+          id: newUser._id,
+          name: newUser.name,
+          email: newUser.email,
+          role: newUser.role,
         },
         token,
       },
@@ -53,7 +69,7 @@ export const register = async (req, res) => {
 };
 
 /**
- * @desc    Login user
+ * @desc    Login user/admin
  * @route   POST /api/auth/login
  * @access  Public
  */
@@ -69,8 +85,14 @@ export const login = async (req, res) => {
       });
     }
 
-    // Find user by email (include password for comparison)
-    const user = await User.findOne({ email }).select('+password');
+    // Check in both Admin and User collections
+    let user = await Admin.findOne({ email }).select('+password');
+    let role = 'ADMIN';
+
+    if (!user) {
+      user = await User.findOne({ email }).select('+password');
+      role = 'USER';
+    }
 
     if (!user) {
       return res.status(401).json({
@@ -90,7 +112,10 @@ export const login = async (req, res) => {
     }
 
     // Generate JWT token
-    const token = generateToken({ id: user._id });
+    const token = generateToken({ 
+      id: user._id, 
+      role: user.role 
+    });
 
     res.status(200).json({
       success: true,
@@ -98,7 +123,7 @@ export const login = async (req, res) => {
       data: {
         user: {
           id: user._id,
-          username: user.username,
+          name: user.name,
           email: user.email,
           role: user.role,
         },
@@ -121,14 +146,16 @@ export const login = async (req, res) => {
  */
 export const getProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id);
+    // User is already attached by auth middleware
+    const Model = req.user.role === 'ADMIN' ? Admin : User;
+    const user = await Model.findById(req.user._id);
 
     res.status(200).json({
       success: true,
       data: {
         user: {
           id: user._id,
-          username: user.username,
+          name: user.name,
           email: user.email,
           role: user.role,
           createdAt: user.createdAt,

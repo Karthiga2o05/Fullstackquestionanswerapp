@@ -53,7 +53,7 @@ const apiRequest = async (
 // Authentication API
 export const authAPI = {
   register: async (userData: {
-    username: string;
+    name: string;
     email: string;
     password: string;
     role: 'ADMIN' | 'USER';
@@ -88,20 +88,45 @@ export const authAPI = {
   },
 };
 
-// Question API
-export const questionAPI = {
+// Section API
+export const sectionAPI = {
   getAll: async () => {
-    return await apiRequest('/questions');
+    return await apiRequest('/sections');
   },
 
-  getById: async (id: string) => {
-    return await apiRequest(`/questions/${id}`);
+  getAllAdmin: async () => {
+    return await apiRequest('/admin/sections');
+  },
+
+  create: async (sectionData: { sectionName: string }) => {
+    return await apiRequest('/admin/sections', {
+      method: 'POST',
+      body: JSON.stringify(sectionData),
+    });
+  },
+
+  delete: async (id: string) => {
+    return await apiRequest(`/admin/sections/${id}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
+// Question API
+export const questionAPI = {
+  getBySectionId: async (sectionId: string) => {
+    return await apiRequest(`/questions/${sectionId}`);
+  },
+
+  getBySectionIdAdmin: async (sectionId: string) => {
+    return await apiRequest(`/admin/questions/${sectionId}`);
   },
 };
 
 // Admin API
 export const adminAPI = {
   createQuestion: async (questionData: {
+    sectionId: string;
     questionText: string;
     questionType: 'MCQ' | 'FILL_IN_BLANK';
     options?: { A: string; B: string; C: string; D: string };
@@ -141,19 +166,23 @@ export const adminAPI = {
 
 // Answer API
 export const answerAPI = {
-  submit: async (answerData: { questionId: string; answerText: string }) => {
+  submit: async (answerData: { 
+    sectionId: string;
+    questionId: string; 
+    answerText: string;
+  }) => {
     return await apiRequest('/answers', {
       method: 'POST',
       body: JSON.stringify(answerData),
     });
   },
 
-  getMyAnswers: async () => {
-    return await apiRequest('/answers');
+  getUserAnswers: async () => {
+    return await apiRequest('/answers/user');
   },
 
-  getUserAnswers: async (userId: string) => {
-    return await apiRequest(`/answers/${userId}`);
+  getUserAnswersBySection: async (sectionId: string) => {
+    return await apiRequest(`/answers/section/${sectionId}`);
   },
 };
 

@@ -1,5 +1,6 @@
 import { verifyToken } from '../config/jwt.js';
 import User from '../models/User.js';
+import Admin from '../models/Admin.js';
 
 /**
  * Middleware to protect routes with JWT authentication
@@ -23,8 +24,12 @@ export const protect = async (req, res, next) => {
     // Verify token
     const decoded = verifyToken(token);
 
-    // Get user from token (exclude password)
-    const user = await User.findById(decoded.id).select('-password');
+    // Get user from token (check both Admin and User collections)
+    let user = await Admin.findById(decoded.id).select('-password');
+    
+    if (!user) {
+      user = await User.findById(decoded.id).select('-password');
+    }
 
     if (!user) {
       return res.status(401).json({
